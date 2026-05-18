@@ -737,7 +737,7 @@ const DynamicTerrainCanvas = () => {
 return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ width: '100vw', height: '100vh', zIndex: 0 }} />;};
 
 // ============================================================
-// EFEITO DE PARTÍCULAS ORIGINAL
+// EFEITO DE PARTÍCULAS CORRIGIDO
 // ============================================================
 const ParticlesBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -747,50 +747,73 @@ const ParticlesBackground = () => {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
-    const particles: { x: number; y: number; radius: number; speedX: number; speedY: number }[] = [];
-    for (let i = 0; i < 100; i++) {
-      particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        radius: Math.random() * 2 + 1,
-        speedX: (Math.random() - 0.5) * 0.5,
-        speedY: (Math.random() - 0.5) * 0.5
-      });
-    }
+    
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let particles: { x: number; y: number; radius: number; speedX: number; speedY: number }[] = [];
+    let animationId: number;
+    
+    // Função para redimensionar o canvas e recriar partículas
+    const handleResize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+      
+      // Recriar partículas para a nova dimensão
+      particles = [];
+      for (let i = 0; i < 100; i++) {
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          radius: Math.random() * 2 + 1,
+          speedX: (Math.random() - 0.5) * 0.5,
+          speedY: (Math.random() - 0.5) * 0.5
+        });
+      }
+    };
+    
+    // Inicializar
+    handleResize();
+    
+    // Animação
     const animate = () => {
+      if (!ctx) return;
       ctx.fillStyle = "rgba(2, 6, 23, 0.1)";
       ctx.fillRect(0, 0, width, height);
+      
       particles.forEach(p => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(0, 240, 255, ${Math.random() * 0.5})`;
         ctx.fill();
+        
         p.x += p.speedX;
         p.y += p.speedY;
+        
+        // Voltar ao outro lado quando sair da tela
         if (p.x < 0) p.x = width;
         if (p.x > width) p.x = 0;
         if (p.y < 0) p.y = height;
         if (p.y > height) p.y = 0;
       });
-      requestAnimationFrame(animate);
+      
+      animationId = requestAnimationFrame(animate);
     };
-    const rafId = requestAnimationFrame(animate);
-const handleResize = () => {
-  width = canvas.width = window.innerWidth;
-  height = canvas.height = window.innerHeight;
-  // Força o canvas a ocupar a tela toda
-  canvas.style.width = '100vw';
-  canvas.style.height = '100vh';
-};
+    
+    animate();
+    
+    // Listeners
     window.addEventListener("resize", handleResize);
+    
     return () => {
       window.removeEventListener("resize", handleResize);
-      cancelAnimationFrame(rafId);
+      cancelAnimationFrame(animationId);
     };
   }, []);
-return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ width: '100vw', height: '100vh', zIndex: 0 }} />;};
+  
+  return <canvas ref={canvasRef} className="fixed inset-0 w-full h-full pointer-events-none z-0" />;
+};
 
 // ============================================================
 // EFEITO ARTISTA - VERSÃO ORIGINAL (QUE FUNCIONAVA)
