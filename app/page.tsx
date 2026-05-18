@@ -1392,10 +1392,9 @@ useEffect(() => {
 
 
           setConfig({
-          nome_artista: primeiraLinha.nome_artista || "L*A HIT",
-          bio: primeiraLinha.bio || "Composições que conectam",
-          slogan: primeiraLinha.slogan || "COMPOSIÇÕES QUE CONECTAM",
-          color: primeiraLinha.color || "#06b6d4",
+nome_artista: (primeiraLinha.nome_artista || "").trim(),
+bio: (primeiraLinha.bio || "").trim(),
+slogan: (primeiraLinha.slogan || "").trim(),         color: primeiraLinha.color || "#06b6d4",
           color_destaque: primeiraLinha.color_destaque || "#10b981",
           cor_nome: primeiraLinha.cor_nome || "#ffffff",
           cor_bio: primeiraLinha.cor_bio || "#ffffff",
@@ -1496,7 +1495,7 @@ const normalLinks = links.filter(link => !link.link_png_social);
 
         {/* Bio */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="text-center mb-10">
-<p className="text-sm tracking-wide" style={{ color: config.cor_bio || themeColor }}>{config.bio}</p>          {config.slogan && (
+{config.bio && <p className="text-sm tracking-wide" style={{ color: config.cor_bio || themeColor }}>{config.bio}</p>}          {config.slogan && (
 <p className="text-[10px] tracking-[0.2em] uppercase mt-1.5 font-semibold" style={{ color: config.cor_slogan || themeColor }}>{config.slogan}</p>          )}
         </motion.div>
 
