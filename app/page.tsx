@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Papa from "papaparse";
 import * as Icons from "lucide-react";
 
-const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQO3kv_Zw3wUCV2zqtnVuY555VXxLrZ7_cqnnGJ_b-GCF0LF3Qah9MAwhiEEiVIUkkpWqOg9BNhDpHY/pub?output=csv";
+const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSd9_3ncvWYiIQ95h5iT_nDFRHyvWciHcat4rg1H-9KaEUmPzhdVhQ2tEhKHEnFZDadlfWeMbFyO09_/pub?output=csv";
 
 // ============================================================
 // TIPOS
