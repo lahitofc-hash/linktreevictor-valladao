@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Papa from "papaparse";
 import * as Icons from "lucide-react";
 
-const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSd9_3ncvWYiIQ95h5iT_nDFRHyvWciHcat4rg1H-9KaEUmPzhdVhQ2tEhKHEnFZDadlfWeMbFyO09_/pub?output=csv";
+const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTDalzyVubRqiwsZl21Cwo53aXTtO6WQb4QqLI0tD2juK371G53JX-LCPpvtTWv5xMkySvbk-yN1ivl/pub?gid=0&single=true&output=csv";
 
 // ============================================================
 // TIPOS
@@ -28,10 +28,18 @@ interface Countdown {
   buttonText: string;
   active: boolean;
   image?: string;
-   imageOpacity?: string; // ← NOVO
+  imageOpacity?: string;
+  imageSize?: string;      // ← TEM QUE TER ESTA LINHA
   backgroundColor?: string;
-    videoUrl?: string; // ← NOVO
-
+  videoUrl?: string;
+  youtubeUrl?: string;  // ← ADICIONE ESTA LINHA
+  imagePosition?: string;
+  titleColor?: string;
+  descriptionColor?: string;
+  buttonTextColor?: string;
+  icon?: string;
+  iconColor?: string;
+  showMute?: boolean;
 }
 
 // ============================================================
@@ -46,15 +54,73 @@ const CountdownCard = ({
   themeColor: string; 
   highlightColor: string;
 }) => {
-    const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  
+  const [isVideoMuted, setIsVideoMuted] = useState(true);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [isExpired, setIsExpired] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isImageHovered, setIsImageHovered] = useState(false);
   const targetDateRef = useRef(new Date(countdown.targetDate));
+  
+  // Configurações da planilha
+  const imageOpacity = countdown.imageOpacity ? parseInt(countdown.imageOpacity) / 100 : 0.7;
+  const imageSize = countdown.imageSize ? parseInt(countdown.imageSize) : 48;
+  const imagePosition = countdown.imagePosition || "center";
+  
+  // Ícone do contador
+  const getIconForCountdown = () => {
+    const iconName = countdown.icon || "";
+    const formattedName = iconName.charAt(0).toUpperCase() + iconName.slice(1).toLowerCase();
+    const IconComponent = (Icons as any)[formattedName];
+return IconComponent ? <IconComponent size={12} /> : null;  };
+  
+  // Cores personalizadas
+  const titleColor = countdown.titleColor || "#ffffff";
+  const descriptionColor = countdown.descriptionColor || "#ffffffcc";
+  const buttonTextColor = countdown.buttonTextColor || "#ffffff";
+  const iconColor = countdown.iconColor || themeColor;
+  
+  // Posicionamento da imagem
+  const getObjectPosition = () => {
+    const positionMap: Record<string, string> = {
+      "center": "50% 50%",
+      "top": "50% 0%",
+      "bottom": "50% 100%",
+      "left": "0% 50%",
+      "right": "100% 50%",
+      "top left": "0% 0%",
+      "top right": "100% 0%",
+      "bottom left": "0% 100%",
+      "bottom right": "100% 100%"
+    };
+    return positionMap[imagePosition.toLowerCase()] || "50% 50%";
+  };
+  
+  // Detecta se é imagem ou vídeo
+  const isImageUrl = (url: string) => {
+    if (!url) return false;
+    const imageExtensions = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i;
+    return imageExtensions.test(url);
+  };
+  
+const isVideo = countdown.videoUrl && !isImageUrl(countdown.videoUrl);
+const isImage = countdown.videoUrl && isImageUrl(countdown.videoUrl);
 
-    const toggleVideo = (e: React.MouseEvent) => {
+// YouTube
+const isYouTube = countdown.videoUrl && 
+  (countdown.videoUrl.includes('youtube.com') || 
+   countdown.videoUrl.includes('youtu.be'));
+
+   const isInstagram = countdown.videoUrl && 
+  countdown.videoUrl.includes('instagram.com');
+const getYouTubeId = (url?: string) => {
+  if (!url) return '';
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+  return match ? match[1] : url;
+};
+
+  const toggleVideo = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!videoRef.current) return;
     if (isVideoPlaying) {
@@ -65,6 +131,14 @@ const CountdownCard = ({
       setIsVideoPlaying(true);
     }
   };
+
+const toggleMute = (e: React.MouseEvent) => {
+  e.stopPropagation();
+  e.preventDefault(); // ← ADICIONE
+  if (!videoRef.current) return;
+  videoRef.current.muted = !videoRef.current.muted;
+  setIsVideoMuted(!isVideoMuted);
+};
 
   useEffect(() => {
     const targetDate = targetDateRef.current;
@@ -86,7 +160,6 @@ const CountdownCard = ({
       };
     };
 
-    // Verifica se já expirou na montagem
     const now = new Date().getTime();
     if (targetDate.getTime() - now < 0) {
       setIsExpired(true);
@@ -119,105 +192,169 @@ const CountdownCard = ({
       className="relative group"
     >
       <div 
-        className="relative p-5 rounded-2xl transition-all duration-500 overflow-hidden"
-        style={{
-          background: countdown.backgroundColor 
-            ? `linear-gradient(135deg, ${countdown.backgroundColor}20, ${themeColor}10)`
-            : `linear-gradient(135deg, ${themeColor}10, ${highlightColor}05)`,
-          backdropFilter: "blur(20px)",
-          borderColor: isHovered ? `${themeColor}40` : `${themeColor}20`,
-          borderWidth: "1px",
-          borderStyle: "solid",
-          boxShadow: isHovered 
-            ? `0 20px 40px -12px ${themeColor}30, 0 0 0 1px ${themeColor}30 inset`
-            : `0 10px 20px -10px rgba(0,0,0,0.3)`,
-        }}
+        className="relative rounded-2xl transition-all duration-500 overflow-hidden"
+style={{
+  background: countdown.backgroundColor 
+    ? `linear-gradient(135deg, ${countdown.backgroundColor}20, ${themeColor}10)`
+    : `linear-gradient(135deg, ${themeColor}10, ${highlightColor}05)`,
+  backdropFilter: "blur(20px)",
+  borderColor: isHovered ? themeColor : `${themeColor}40`,
+  borderWidth: "1.5px",
+  borderStyle: "solid",
+  boxShadow: isHovered 
+    ? `0 0 30px ${themeColor}60, 0 0 60px ${themeColor}30` 
+    : `0 4px 15px ${themeColor}20`,
+  transition: "all 0.3s ease",
+}}
       >
-
+        {/* LINHA SUPERIOR COM GRADIENTE */}
         <div 
-          className="absolute top-0 left-4 right-4 h-0.5 rounded-full transition-all duration-500"
+          className="absolute top-0 left-3 right-3 h-0.5 rounded-full transition-all duration-500 z-20"
           style={{ 
-            backgroundColor: themeColor,
+            background: `linear-gradient(to right, transparent, ${themeColor}, ${highlightColor}, transparent)`,
             opacity: isHovered ? 1 : 0.3
           }}
         />
 
-{/* VÍDEO (opcional) */}
-{countdown.videoUrl && (
-  <div className="relative w-full rounded-xl overflow-hidden mb-4 group/video">
-    <video 
-      ref={videoRef}
-      className="w-full rounded-xl"
-      playsInline
-      muted
-      loop
-      autoPlay
-      preload="metadata"
-      style={{ maxHeight: "200px", objectFit: "cover" }}
-      onPlay={() => setIsVideoPlaying(true)}
-      onPause={() => setIsVideoPlaying(false)}
-    >
-      <source src={countdown.videoUrl} type="video/mp4" />
-    </video>
-    
-    {/* Overlay gradiente */}
-    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-xl pointer-events-none" />
-    
-    {/* Botões: Play/Pause + Mute */}
-    <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover/video:opacity-100 transition-opacity duration-300">
-      {/* Botão Mute/Unmute */}
-      <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (!videoRef.current) return;
-          videoRef.current.muted = !videoRef.current.muted;
-        }}
-        className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center"
-      >
-        <Icons.VolumeX size={14} className="text-white" />
-      </motion.button>
-    </div>
+        {/* COM MÍDIA PRINCIPAL (VÍDEO OU IMAGEM) */}
+{(isVideo || isImage || isYouTube || isInstagram) && (
+  <div className="relative w-full">
 
-    {/* Botão Play/Pause central */}
-    <div 
-      className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover/video:opacity-100 transition-opacity duration-300"
-      onClick={toggleVideo}
-    >
-<motion.div 
-  className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30"
-  whileHover={{ scale: 1.1 }}
-  whileTap={{ scale: 0.9 }}
->
-  {isVideoPlaying ? (
-    <Icons.Pause size={22} className="text-white" />
-  ) : (
-    <Icons.Play size={22} className="text-white ml-1" />
-  )}
-</motion.div>
-    </div>
+{/* INSTAGRAM EMBED */}
+{isInstagram && (
+  <div className="relative w-full" style={{ paddingBottom: '100%' }}>
+    <iframe
+      className="absolute inset-0 w-full h-full"
+      src={`${countdown.videoUrl}embed/`}
+      allowFullScreen
+      scrolling="no"
+      style={{ border: 'none' }}
+    />
+    <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
   </div>
 )}
 
-{/* IMAGEM (opcional) */}
+{/* YOUTUBE EMBED */}
+{isYouTube && (
+  <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+    <iframe
+      className="absolute inset-0 w-full h-full"
+src={`https://www.youtube-nocookie.com/embed/${getYouTubeId(countdown.videoUrl || '')}?autoplay=1&mute=1&loop=1&playlist=${getYouTubeId(countdown.videoUrl)}&controls=1`}      allow="autoplay; encrypted-media"
+      allowFullScreen
+      style={{ border: 'none' }}
+    />
+    {/* Overlay gradiente */}
+    <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+  </div>
+)}
+
+{/* VÍDEO MP4 (apenas se NÃO for YouTube) */}
+{isVideo && !isYouTube && (
+
+<video 
+  ref={videoRef}
+  className="w-full"
+  playsInline
+  muted
+  loop
+  autoPlay
+  preload="metadata"
+
+  style={{ 
+  width: "100%", 
+  objectFit: "cover",
+  objectPosition: "center",
+  maxHeight: "280px",
+  minHeight: "220px"
+}}
+
+  onClick={toggleVideo}
+
+
+                onPlay={() => setIsVideoPlaying(true)}
+                onPause={() => setIsVideoPlaying(false)}
+              >
+<source src={countdown.videoUrl} type="video/mp4" />              </video>
+            )}
+            
+            {/* IMAGEM PRINCIPAL */}
+            {isImage && (
+              <img 
+                src={countdown.videoUrl}
+                alt={countdown.title}
+                className="w-full"
+                style={{ 
+                  width: "100%", 
+                  objectFit: "cover",
+                  objectPosition: getObjectPosition(),
+                  maxHeight: "280px",
+                  minHeight: "220px"
+                }}
+              />
+            )}
+            
+            {/* GRADIENTE ESCURO NA PARTE INFERIOR */}
+            <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+            
+            {/* CONTROLES DO VÍDEO */}
+            {isVideo && (
+              <>
+{countdown.showMute !== false && (
+  <div className="absolute top-2 left-2 z-30">
+    <motion.button
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.9 }}
+      onClick={toggleMute}
+      className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center cursor-pointer hover:bg-black/80"
+    >
+      {isVideoMuted ? (
+        <Icons.VolumeX size={14} className="text-white" />
+      ) : (
+        <Icons.Volume2 size={14} className="text-white" />
+      )}
+    </motion.button>
+  </div>
+)}
+
+                <div 
+                  className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover/video:opacity-100 transition-opacity duration-300 z-20"
+                  onClick={toggleVideo}
+                >
+                  <motion.div 
+                    className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/30 cursor-pointer"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    {isVideoPlaying ? (
+                      <Icons.Pause size={18} className="text-white" />
+                    ) : (
+                      <Icons.Play size={18} className="text-white ml-0.5" />
+                    )}
+                  </motion.div>
+                </div>
+              </>
+            )}
+
+{/* IMAGEM PEQUENA NO CANTO SUPERIOR DIREITO - OPACIDADE CORRIGIDA */}
 {countdown.image && (
-  <div 
-    className="absolute top-3 right-3 transition-all duration-500 group-hover:scale-110"
-    style={{ zIndex: 5 }}
+  <motion.div 
+    className="absolute top-3 right-3 z-20"
+    animate={{ 
+      opacity: isImageHovered ? 1 : imageOpacity,
+      scale: isImageHovered ? 1.1 : 1
+    }}
+    onHoverStart={() => setIsImageHovered(true)}
+    onHoverEnd={() => setIsImageHovered(false)}
+    transition={{ duration: 0.2 }}
   >
     <div 
-      className="w-20 h-20 rounded-xl overflow-hidden border-2 shadow-xl transition-all duration-500"
+      className="overflow-hidden border-2 shadow-xl cursor-pointer rounded-lg"
       style={{ 
+        width: `${imageSize}px`,
+        height: `${imageSize}px`,
         borderColor: `${themeColor}40`, 
         boxShadow: `0 8px 25px -5px ${themeColor}30`,
-        opacity: `${(parseInt(countdown.imageOpacity || "40")) / 100}`
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.opacity = "1";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.opacity = `${(parseInt(countdown.imageOpacity || "40")) / 100}`;
+        backgroundColor: "transparent"
       }}
     >
       <img 
@@ -226,90 +363,198 @@ const CountdownCard = ({
         className="w-full h-full object-cover" 
       />
     </div>
-  </div>
+  </motion.div>
 )}
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center"
-  style={{ backgroundColor: `${themeColor}30` }}>
-  <Icons.Clock size={16} style={{ color: themeColor }} />
-</div>
-            <h3 className="text-lg font-bold text-white">{countdown.title}</h3>
+            {/* TÍTULO E DESCRIÇÃO SOBREPOSTOS */}
+            <div className="absolute bottom-0 left-0 right-0 z-10 px-4 pb-3">
+              <div className="flex items-center gap-2 mb-0.5">
+{countdown.icon && (
+  <div 
+    className="w-6 h-6 rounded-full flex items-center justify-center backdrop-blur-sm bg-black/40"
+    style={{ backgroundColor: `${iconColor}30` }}
+  >
+    <span style={{ color: iconColor }}>{getIconForCountdown()}</span>
+  </div>
+)}
+                <h3 
+                  className="text-sm font-bold drop-shadow-lg"
+                  style={{ color: titleColor }}
+                >
+                  {countdown.title}
+                </h3>
+              </div>
+
+              {countdown.description && (
+                <p 
+                  className="text-[11px] mb-2 leading-relaxed drop-shadow-md"
+                  style={{ color: descriptionColor }}
+                >
+                  {countdown.description}
+                </p>
+              )}
+            </div>
           </div>
+        )}
 
-          {countdown.description && (
-            <p className="text-white/60 text-sm mb-4 leading-relaxed">
-              {countdown.description}
-            </p>
-          )}
+        {/* SEM MÍDIA PRINCIPAL */}
+        {!countdown.videoUrl && (
+          <div className="relative z-10 px-4 py-4">
+{/* IMAGEM PEQUENA - OPACIDADE CORRIGIDA */}
+{countdown.image && (
+  <motion.div 
+    className="absolute top-2 right-2 z-30"
+    animate={{ 
+      opacity: isImageHovered ? 1 : imageOpacity,
+      scale: isImageHovered ? 1.1 : 1
+    }}
+    onHoverStart={() => setIsImageHovered(true)}
+    onHoverEnd={() => setIsImageHovered(false)}
+    transition={{ duration: 0.2 }}
+  >
+    <div 
+      className="overflow-hidden border-2 shadow-xl cursor-pointer rounded-lg"
+      style={{ 
+        width: `${imageSize}px`,
+        height: `${imageSize}px`,
+        borderColor: `${themeColor}40`, 
+        boxShadow: `0 8px 25px -5px ${themeColor}30`,
+        backgroundColor: "transparent"
+      }}
+    >
+      <img 
+        src={countdown.image} 
+        alt="" 
+        className="w-full h-full object-cover" 
+      />
+    </div>
+  </motion.div>
+)}
 
+            {/* TÍTULO E DESCRIÇÃO */}
+            <div className="flex items-center gap-2 mb-1">
+              <div 
+                className="w-6 h-6 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: `${iconColor}30` }}
+              >
+{countdown.icon && (
+  <span style={{ color: iconColor }}>{getIconForCountdown()}</span>
+)}              </div>
+              <h3 
+                className="text-sm font-bold"
+                style={{ color: titleColor }}
+              >
+                {countdown.title}
+              </h3>
+            </div>
+
+            {countdown.description && (
+              <p 
+                className="text-[11px] mb-3 leading-relaxed"
+                style={{ color: descriptionColor }}
+              >
+                {countdown.description}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* CONTADOR E BOTÃO PRÉ-SAVE */}
+        <div className="relative z-10 px-4 pb-4">
           {!isExpired ? (
             <>
-              <div className="flex gap-2 justify-center mb-4">
+              <div className="flex gap-1.5 justify-center mb-3">
                 <div className="text-center">
-                  <div className="backdrop-blur-sm rounded-lg px-3 py-2 min-w-[65px]"
-  style={{ backgroundColor: `${themeColor}15` }}>
-                    <span className="text-2xl font-bold" style={{ color: themeColor }}>{String(timeLeft.days).padStart(2, '0')}</span>
+                  <div className="backdrop-blur-sm rounded-lg px-2 py-1.5 min-w-[52px]" style={{ backgroundColor: `${themeColor}15` }}>
+                    <span className="text-xl font-bold" style={{ color: themeColor }}>{String(timeLeft.days).padStart(2, '0')}</span>
                   </div>
-                  <p className="text-[10px] text-white/50 mt-1 uppercase tracking-wider">Dias</p>
+                  <p className="text-[9px] text-white/50 mt-0.5 uppercase tracking-wider">Dias</p>
                 </div>
                 <div className="text-center">
-                  <div className="backdrop-blur-sm rounded-lg px-3 py-2 min-w-[65px]"
-  style={{ backgroundColor: `${themeColor}15` }}>
-                    <span className="text-2xl font-bold" style={{ color: themeColor }}>{String(timeLeft.hours).padStart(2, '0')}</span>
+                  <div className="backdrop-blur-sm rounded-lg px-2 py-1.5 min-w-[52px]" style={{ backgroundColor: `${themeColor}15` }}>
+                    <span className="text-xl font-bold" style={{ color: themeColor }}>{String(timeLeft.hours).padStart(2, '0')}</span>
                   </div>
-                  <p className="text-[10px] text-white/50 mt-1 uppercase tracking-wider">Horas</p>
+                  <p className="text-[9px] text-white/50 mt-0.5 uppercase tracking-wider">Horas</p>
                 </div>
                 <div className="text-center">
-                  <div className="backdrop-blur-sm rounded-lg px-3 py-2 min-w-[65px]"
-  style={{ backgroundColor: `${themeColor}15` }}>
-                    <span className="text-2xl font-bold" style={{ color: themeColor }}>{String(timeLeft.minutes).padStart(2, '0')}</span>
+                  <div className="backdrop-blur-sm rounded-lg px-2 py-1.5 min-w-[52px]" style={{ backgroundColor: `${themeColor}15` }}>
+                    <span className="text-xl font-bold" style={{ color: themeColor }}>{String(timeLeft.minutes).padStart(2, '0')}</span>
                   </div>
-                  <p className="text-[10px] text-white/50 mt-1 uppercase tracking-wider">Min</p>
+                  <p className="text-[9px] text-white/50 mt-0.5 uppercase tracking-wider">Min</p>
                 </div>
                 <div className="text-center">
-                  <div className="backdrop-blur-sm rounded-lg px-3 py-2 min-w-[65px]"
-  style={{ backgroundColor: `${themeColor}15` }}>
-                    <span className="text-2xl font-bold" style={{ color: themeColor }}>{String(timeLeft.seconds).padStart(2, '0')}</span>
+                  <div className="backdrop-blur-sm rounded-lg px-2 py-1.5 min-w-[52px]" style={{ backgroundColor: `${themeColor}15` }}>
+                    <span className="text-xl font-bold" style={{ color: themeColor }}>{String(timeLeft.seconds).padStart(2, '0')}</span>
                   </div>
-                  <p className="text-[10px] text-white/50 mt-1 uppercase tracking-wider">Seg</p>
+                  <p className="text-[9px] text-white/50 mt-0.5 uppercase tracking-wider">Seg</p>
                 </div>
               </div>
               
-              {/* BOTÃO PRÉ-SAVE APARECE SEMPRE (se tiver link) */}
+              {/* BOTÃO PRÉ-SAVE COM DESTAQUE */}
               {countdown.presaveLink && (
                 <motion.button
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleButtonClick}
-className="w-full py-3 rounded-xl text-white font-medium text-sm hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer relative overflow-hidden group/btn"
 style={{ 
-  background: `linear-gradient(to right, ${themeColor}, ${highlightColor})`,
-  boxShadow: `0 4px 15px -3px ${themeColor}40`
-}}                >
-                  <Icons.Headphones size={16} />
-                  {countdown.buttonText || "PRÉ-SAVE JÁ"}
+  background: `linear-gradient(135deg, ${themeColor}40, ${highlightColor}30)`,
+  backdropFilter: "blur(10px)",
+  borderColor: `${themeColor}60`,
+  borderWidth: "1px",
+  borderStyle: "solid",
+  boxShadow: isHovered 
+    ? `0 0 25px ${themeColor}50, 0 0 50px ${themeColor}20` 
+    : `0 0 10px ${themeColor}20`,
+  color: buttonTextColor || "#ffffff",
+  textShadow: "0 1px 1px rgba(0,0,0,0.2)",
+  letterSpacing: "0.5px",
+  transition: "all 0.3s ease",
+}}
+                >
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-45"
+                    animate={isHovered ? { x: ["0%", "200%"] } : { x: "0%" }}
+                    transition={{ duration: 0.8, repeat: isHovered ? Infinity : 0 }}
+                    style={{ pointerEvents: "none" }}
+                  />
+                  <Icons.Headphones size={16} className="drop-shadow-sm" />
+                  <span className="drop-shadow-sm">{countdown.buttonText || "PRÉ-SAVE JÁ"}</span>
+                  <Icons.ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
                 </motion.button>
               )}
             </>
           ) : (
             countdown.presaveLink && (
               <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ scale: 1.02 }}
+                whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleButtonClick}
-className="w-full py-3 rounded-xl text-white font-medium text-sm hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer relative overflow-hidden group/btn"
 style={{ 
-  background: `linear-gradient(to right, ${highlightColor}, ${themeColor})`,
-  boxShadow: `0 4px 15px -3px ${highlightColor}40`
-}}              >
-                <Icons.Headphones size={16} />
-                {countdown.buttonText || "OUÇA AGORA"}
+  background: `linear-gradient(135deg, ${themeColor}40, ${highlightColor}30)`,
+  backdropFilter: "blur(10px)",
+  borderColor: `${themeColor}60`,
+  borderWidth: "1px",
+  borderStyle: "solid",
+  boxShadow: isHovered 
+    ? `0 0 25px ${themeColor}50, 0 0 50px ${themeColor}20` 
+    : `0 0 10px ${themeColor}20`,
+  color: buttonTextColor || "#ffffff",
+  textShadow: "0 1px 1px rgba(0,0,0,0.2)",
+  letterSpacing: "0.5px",
+  transition: "all 0.3s ease",
+}}
+              >
+                <motion.div 
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-45"
+                  animate={isHovered ? { x: ["0%", "200%"] } : { x: "0%" }}
+                  transition={{ duration: 0.8, repeat: isHovered ? Infinity : 0 }}
+                  style={{ pointerEvents: "none" }}
+                />
+                <Icons.Headphones size={16} className="drop-shadow-sm" />
+                <span className="drop-shadow-sm">{countdown.buttonText || "OUÇA AGORA"}</span>
+                <Icons.ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
               </motion.button>
             )
           )}
@@ -655,8 +900,7 @@ if (tipo === "artista") {
 
 // EFEITO: CÉU ESTRELADO
 if (tipo === "estrelado") {
-  return <StarGalaxyBackgroundOptimized themeColor={themeColor} highlightColor={highlightColor} />;
-}
+return <StarGalaxyBackground themeColor={themeColor} highlightColor={highlightColor} />;}
 
   // EFEITO: PADRÃO
   return (
@@ -873,185 +1117,104 @@ const ArtistBackground = ({ themeColor, highlightColor }: { themeColor: string; 
 
 
 // ============================================================
-// CÉU ESTRELADO - VERSÃO OTIMIZADA (PERFORMANCE)
+// CÉU ESTRELADO - COM MOUSE, PORÉM LEVE
 // ============================================================
-const StarGalaxyBackgroundOptimized = ({ themeColor, highlightColor }: { themeColor: string; highlightColor: string }) => {
+const StarGalaxyBackground = ({ themeColor, highlightColor }: { themeColor: string; highlightColor: string }) => {
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
   const [isMobile, setIsMobile] = useState(false);
 
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768);
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
+  // Mouse tracking (mais leve)
   useEffect(() => {
     const handleMouse = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
+      setMousePos({
+        x: (e.clientX / window.innerWidth),
+        y: (e.clientY / window.innerHeight),
+      });
     };
     window.addEventListener("mousemove", handleMouse);
     return () => window.removeEventListener("mousemove", handleMouse);
   }, []);
 
-  const bigStars = isMobile ? 20 : 35;
-  const midStars = isMobile ? 40 : 70;
-  const smallStars = isMobile ? 60 : 100;
-  const dustParticles = isMobile ? 15 : 30;
-  const shootingStars = isMobile ? 1 : 3;
+  // Detectar mobile
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Configurações REDUZIDAS para performance
+  const bigStars = isMobile ? 10 : 15;
+  const midStars = isMobile ? 20 : 30;
+  const smallStars = isMobile ? 40 : 60;
 
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950/60 to-purple-950/40">
+    <div className="fixed inset-0 -z-10 overflow-hidden">
       
-      {/* NEBULOSA 1 - GRANDE E MAIS VISÍVEL */}
-      <motion.div
-        className="absolute top-0 left-[10%] w-[600px] h-[400px] rounded-full blur-3xl"
-        style={{ background: `radial-gradient(ellipse, ${themeColor}25, ${highlightColor}15, transparent 70%)` }}
-        animate={{ x: ["0%", "5%", "-5%", "0%"], y: ["0%", "-4%", "4%", "0%"], scale: [1, 1.1, 0.95, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-      />
+      {/* Fundo base */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-indigo-950/30 to-purple-950/10" />
+      
+      {/* NEBULOSA ÚNICA (sem animação) */}
+      <div className="absolute top-1/3 left-1/4 w-[350px] h-[250px] rounded-full blur-3xl opacity-25"
+        style={{ background: `radial-gradient(ellipse, ${themeColor}15, transparent 80%)` }} />
 
-      {/* NEBULOSA 2 - COLORIDA */}
-      <motion.div
-        className="absolute bottom-[10%] right-[5%] w-[500px] h-[350px] rounded-full blur-3xl"
-        style={{ background: `radial-gradient(ellipse, ${highlightColor}20, ${themeColor}10, transparent 75%)` }}
-        animate={{ x: ["0%", "-6%", "4%", "0%"], y: ["0%", "5%", "-3%", "0%"], scale: [1, 0.9, 1.05, 1] }}
-        transition={{ duration: 22, repeat: Infinity, ease: "easeInOut", delay: 3 }}
-      />
-
-      {/* NEBULOSA 3 - PEQUENA E BRILHANTE */}
-      <motion.div
-        className="absolute top-[40%] left-[50%] w-[300px] h-[200px] rounded-full blur-2xl"
-        style={{ background: `radial-gradient(ellipse, ${themeColor}30, transparent 80%)` }}
-        animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.2, 1] }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-      />
-
-      {/* VIA LÁCTEA MELHORADA */}
+      {/* VIA LÁCTEA COM PARALLAX LEVE */}
       <div 
-        className="absolute inset-0 opacity-25"
+        className="absolute inset-0 opacity-15"
         style={{
-          background: `linear-gradient(135deg, transparent 25%, ${themeColor}12 40%, ${highlightColor}18 50%, ${themeColor}12 60%, transparent 75%)`,
-          transform: `rotate(${15 + mousePos.x * 8}deg) scale(1.3)`,
-          transition: "transform 0.5s ease-out",
+          background: `linear-gradient(135deg, transparent 35%, ${themeColor}10 45%, ${highlightColor}15 50%, ${themeColor}10 55%, transparent 65%)`,
+          transform: `rotate(${15 + mousePos.x * 5}deg)`,
+          transition: "transform 0.2s ease-out",
         }}
       />
 
-      {/* ESTRELAS GRANDES COM GLOW */}
-      {[...Array(bigStars)].map((_, i) => {
-        const size = 2 + Math.random() * 3;
-        const colors = [themeColor, highlightColor, "#ffffff", "#f0e68c", "#87ceeb"];
-        return (
-          <motion.div
-            key={`big-${i}`}
-            className="absolute rounded-full"
-            style={{
-              width: size, height: size,
-              backgroundColor: colors[i % colors.length],
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              boxShadow: `0 0 ${size * 3}px ${size * 1.5}px ${colors[i % colors.length]}40`,
-            }}
-            animate={{ opacity: [0.3, 1, 0.3], scale: [1, 1.3, 1] }}
-            transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 4 }}
-          />
-        );
-      })}
-
-      {/* ESTRELAS MÉDIAS */}
-      {[...Array(midStars)].map((_, i) => (
+      {/* ESTRELAS GRANDES (apenas 15) */}
+      {[...Array(bigStars)].map((_, i) => (
         <motion.div
-          key={`mid-${i}`}
-          className="absolute rounded-full"
+          key={`big-${i}`}
+          className="absolute rounded-full bg-white"
           style={{
-            width: 1.5, height: 1.5,
-            backgroundColor: i % 4 === 0 ? themeColor : i % 4 === 1 ? highlightColor : "white",
+            width: 2, height: 2,
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
-            boxShadow: "0 0 3px rgba(255,255,255,0.2)",
+            boxShadow: `0 0 4px rgba(255,255,255,0.5)`,
           }}
-          animate={{ opacity: [0.2, 0.8, 0.2] }}
-          transition={{ duration: 2 + Math.random() * 4, repeat: Infinity, delay: Math.random() * 3 }}
+          animate={{ opacity: [0.3, 0.9, 0.3] }}
+          transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 3 }}
         />
       ))}
 
-      {/* ESTRELAS PEQUENAS (FIXAS) */}
+      {/* ESTRELAS MÉDIAS (sem animação - só opacidade fixa) */}
+      {[...Array(midStars)].map((_, i) => (
+        <div
+          key={`mid-${i}`}
+          className="absolute rounded-full bg-white"
+          style={{
+            width: 1, height: 1,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            opacity: 0.3 + Math.random() * 0.4,
+          }}
+        />
+      ))}
+
+      {/* ESTRELAS PEQUENAS (fixas) */}
       {[...Array(smallStars)].map((_, i) => (
         <div
           key={`small-${i}`}
           className="absolute rounded-full"
           style={{
-            width: Math.random() * 1.2,
-            height: Math.random() * 1.2,
-            backgroundColor: `rgba(255,255,255,${0.15 + Math.random() * 0.35})`,
+            width: 0.5, height: 0.5,
+            backgroundColor: `rgba(255, 255, 255, ${0.1 + Math.random() * 0.2})`,
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
           }}
         />
       ))}
-
-      {/* ESTRELAS CADENTES - MAIS FREQUENTES */}
-      {[...Array(shootingStars)].map((_, i) => (
-        <motion.div
-          key={`shooting-${i}`}
-          className="absolute h-[2px] rounded-full"
-          style={{
-            width: 80 + Math.random() * 40,
-            background: `linear-gradient(90deg, ${themeColor}, ${highlightColor}, transparent)`,
-            left: `${Math.random() * 80}%`,
-            top: `${Math.random() * 40}%`,
-            opacity: 0,
-            boxShadow: `0 0 6px ${themeColor}`,
-          }}
-          animate={{
-            x: [-60, 200],
-            y: [0, 80],
-            opacity: [0, 0.9, 0],
-          }}
-          transition={{
-            duration: 1 + Math.random() * 0.5,
-            repeat: Infinity,
-            repeatDelay: 8 + i * 6 + Math.random() * 10,
-            delay: i * 7,
-          }}
-        />
-      ))}
-
-      {/* POEIRA CÓSMICA COLORIDA */}
-      {[...Array(dustParticles)].map((_, i) => (
-        <motion.div
-          key={`dust-${i}`}
-          className="absolute rounded-full"
-          style={{
-            width: Math.random() * 2 + 0.5,
-            height: Math.random() * 2 + 0.5,
-            backgroundColor: i % 3 === 0 ? themeColor : i % 3 === 1 ? highlightColor : "#ffffff",
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            boxShadow: `0 0 4px ${i % 3 === 0 ? themeColor : highlightColor}`,
-          }}
-          animate={{
-            x: [0, (Math.random() - 0.5) * 25, 0],
-            y: [0, (Math.random() - 0.5) * 20, 0],
-            opacity: [0.05, 0.25, 0.05],
-          }}
-          transition={{ duration: 8 + Math.random() * 8, repeat: Infinity, ease: "easeInOut" }}
-        />
-      ))}
-
-      {/* PARALLAX COM MOUSE */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        animate={{ x: (mousePos.x - 0.5) * -15, y: (mousePos.y - 0.5) * -8 }}
-        transition={{ type: "spring", stiffness: 30, damping: 15 }}
-      >
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-3xl"
-          style={{ backgroundColor: `${themeColor}04` }} />
-      </motion.div>
 
       {/* VIGNETTE */}
       <div className="absolute inset-0 pointer-events-none"
-        style={{ background: "radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.5) 100%)" }} />
+        style={{ background: `radial-gradient(ellipse at ${mousePos.x * 100}% ${mousePos.y * 100}%, transparent 40%, rgba(0,0,0,0.4) 100%)` }} />
     </div>
   );
 };
@@ -1094,14 +1257,16 @@ const EmailCard = ({ link, index, themeColor, highlightColor, fontFamily, fontSi
       style={{ fontFamily, perspective: "1000px" }}
     >
       <div className="relative p-4 rounded-2xl transition-all duration-500 overflow-hidden"
-        style={{
-          background: "rgba(255, 255, 255, 0.02)",
-          backdropFilter: "blur(20px)",
-          borderColor: `${themeColor}20`,
-          borderWidth: "1px",
-          borderStyle: "solid",
-              minHeight: "56px",  // ← ADICIONE ESTA LINHA
-        }}
+style={{
+  background: "rgba(255, 255, 255, 0.02)",
+  backdropFilter: "blur(20px)",
+  borderColor: `${themeColor}40`,
+  borderWidth: "1.5px",
+  borderStyle: "solid",
+  boxShadow: `0 4px 15px ${themeColor}15`,
+  transition: "all 0.3s ease",
+  minHeight: "56px",
+}}
       >
         {/* Spotlight */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
@@ -1294,6 +1459,7 @@ const getIcon = (iconName: string, color?: string) => {
     }
   }, []);
 
+  
   // Efeito do áudio
   useEffect(() => {
     if (!currentTrack?.audioUrl) return;
@@ -1381,25 +1547,34 @@ useEffect(() => {
             });
           }
 
-          // COUNTDOWNS
-          if (row.countdown_title && row.countdown_title.trim() !== "") {
-            const active = row.countdown_active === "TRUE" || row.countdown_active === "true";
-            if (active) {
-              countdownList.push({
-                id: row.countdown_id || `countdown_${countdownList.length + 1}`,
-                title: row.countdown_title,
-                description: row.countdown_description || "",
-                targetDate: row.countdown_target_date,
-                presaveLink: row.countdown_presave_link || "",
-                buttonText: row.countdown_button_text || "PRÉ-SAVE DISPONÍVEL",
-                active: active,
-                image: row.countdown_image || "",
-                imageOpacity: row.countdown_image_opacity || "30",
-                backgroundColor: row.countdown_bg_color || "",
-                videoUrl: row.countdown_video_url || ""
-              });
-            }
-          }
+// COUNTDOWNS
+if (row.countdown_title && row.countdown_title.trim() !== "") {
+  const active = row.countdown_active === "TRUE" || row.countdown_active === "true";
+  if (active) {
+    countdownList.push({
+      id: row.countdown_id || `countdown_${countdownList.length + 1}`,
+      title: row.countdown_title,
+      description: row.countdown_description || "",
+      targetDate: row.countdown_target_date,
+      presaveLink: row.countdown_presave_link || "",
+      buttonText: row.countdown_button_text || "",
+      active: active,
+      image: row.countdown_image || "",
+      imageOpacity: row.countdown_image_opacity || "70",
+      imageSize: row.countdown_image_size || "48",  // ← ADICIONE ESTA LINHA
+      backgroundColor: row.countdown_bg_color || "",
+      videoUrl: row.countdown_video_url || "",
+      youtubeUrl: row.countdown_youtube_url || "",  // ← ADICIONE ESTA LINHA
+      imagePosition: row.countdown_image_position || "center",
+      titleColor: row.countdown_title_color || "",
+      descriptionColor: row.countdown_description_color || "",
+      buttonTextColor: row.countdown_button_text_color || "",
+      icon: row.countdown_icon || "",
+showMute: row.countdown_show_mute !== "FALSE", // TRUE por padrão      
+      iconColor: row.countdown_icon_color || ""
+    });
+  }
+}
         });
 
 
@@ -1411,10 +1586,10 @@ slogan: (primeiraLinha.slogan || "").trim(),         color: primeiraLinha.color 
           cor_nome: primeiraLinha.cor_nome || "#ffffff",
           cor_bio: primeiraLinha.cor_bio || "#ffffff",
           cor_slogan: primeiraLinha.cor_slogan || "#ffffff",
-          titulo_countdown: (primeiraLinha.titulo_countdown || "").trim(),
-          cor_titulo_countdown: primeiraLinha.cor_titulo_countdown || "#ffffff",
-          icone_countdown: (primeiraLinha.icone_countdown || "").trim(),
-          cor_icone_countdown: primeiraLinha.cor_icone_countdown || "#22d3ee",
+titulo_countdown: (primeiraLinha.titulo_countdown || "").trim(),
+cor_titulo_countdown: primeiraLinha.cor_titulo_countdown || "",
+icone_countdown: (primeiraLinha.icone_countdown || "").trim(),
+cor_icone_countdown: primeiraLinha.cor_icone_countdown || "",
           cor_badge_novo: primeiraLinha.cor_badge_novo || "#06b6d4",
           cor_icone_social: primeiraLinha.cor_icone_social || "#ffffff",
           cor_fundo_social: primeiraLinha.cor_fundo_social || "#0a0a0a",
@@ -1529,7 +1704,7 @@ const normalLinks = links.filter(link => !link.link_png_social);
           <motion.div key="countdown" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} 
             className="w-full" style={{ marginBottom: margem }}>
             <div className="flex items-center justify-center gap-2 mb-4">
-              {getIcon(config.icone_countdown || "Rocket", config.cor_icone_countdown || "#22d3ee")}
+{config.icone_countdown && getIcon(config.icone_countdown, config.cor_icone_countdown)}
               <h2 className="text-sm font-medium uppercase tracking-wider" style={{ color: config.cor_titulo_countdown || "#ffffff" }}>
                 {config.titulo_countdown || "Próximos Lançamentos"}
               </h2>
@@ -1557,27 +1732,29 @@ const normalLinks = links.filter(link => !link.link_png_social);
                   whileHover={{ y: -4, scale: parseFloat(link.zoom_social || "1.2"), zIndex: 50 }}
                   className="flex flex-col items-center gap-1.5 group relative" style={{ width: "70px", zIndex: 1 }}
                 >
-                  <div className="relative rounded-full backdrop-blur-sm border flex items-center justify-center transition-all duration-300"
-                    style={{ 
-                      width: `${link.tamanho_icone ? parseInt(link.tamanho_icone) + 28 : 48}px`,
-                      height: `${link.tamanho_icone ? parseInt(link.tamanho_icone) + 28 : 48}px`,
-                      backgroundColor: link.cor_fundo ? `${link.cor_fundo}15` : `${config.cor_fundo_social || "#0a0a0a"}15`,
-                      borderColor: link.cor_borda ? `${link.cor_borda}40` : `${config.cor_borda_social || "#ffffff"}30`,
-                    }}
-                    onMouseEnter={(e) => {
-                      const corHover = link.cor_icone || config.cor_icone_social || "#ffffff";
-                      e.currentTarget.style.backgroundColor = `${corHover}25`;
-                      e.currentTarget.style.borderColor = `${corHover}80`;
-                      e.currentTarget.style.boxShadow = `0 0 25px ${corHover}50`;
-                      e.currentTarget.style.transform = `scale(${link.zoom_social || "1.4"})`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = link.cor_fundo ? `${link.cor_fundo}15` : `${config.cor_fundo_social || "#0a0a0a"}15`;
-                      e.currentTarget.style.borderColor = link.cor_borda ? `${link.cor_borda}40` : `${config.cor_borda_social || "#ffffff"}30`;
-                      e.currentTarget.style.boxShadow = "none";
-                      e.currentTarget.style.transform = "scale(1)";
-                    }}
-                  >
+<div className="relative rounded-full backdrop-blur-sm border flex items-center justify-center transition-all duration-300"
+  style={{ 
+    width: `${link.tamanho_icone ? parseInt(link.tamanho_icone) + 28 : 48}px`,
+    height: `${link.tamanho_icone ? parseInt(link.tamanho_icone) + 28 : 48}px`,
+    background: `linear-gradient(135deg, ${link.cor_fundo || themeColor}20, ${link.cor_fundo || highlightColor}10)`,
+    borderColor: link.cor_borda ? `${link.cor_borda}60` : `${themeColor}50`,
+    borderWidth: "1.5px",
+    boxShadow: `0 0 15px ${link.cor_icone || themeColor}30`,
+    transition: "all 0.3s ease",
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.boxShadow = `0 0 30px ${link.cor_icone || themeColor}60, 0 0 60px ${link.cor_icone || themeColor}30`;
+    e.currentTarget.style.borderColor = link.cor_icone || themeColor;
+    e.currentTarget.style.transform = `scale(${link.zoom_social || "1.4"})`;
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.boxShadow = `0 0 15px ${link.cor_icone || themeColor}30`;
+    e.currentTarget.style.borderColor = link.cor_borda ? `${link.cor_borda}60` : `${themeColor}50`;
+    e.currentTarget.style.transform = "scale(1)";
+  }}
+>
+             
+         
                     <motion.div animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.05, 0.2] }}
                       transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                       className="absolute inset-0 rounded-full"
@@ -1631,15 +1808,19 @@ const normalLinks = links.filter(link => !link.link_png_social);
                   }}
                   className="relative group cursor-pointer" style={{ fontFamily, perspective: "1000px" }}
                 >
-                  <div className="relative p-4 rounded-2xl transition-all duration-500 overflow-hidden"
-                    style={{
-                      background: isHighlight ? `linear-gradient(135deg, ${highlightColor}15, ${themeColor}10)` : "rgba(255, 255, 255, 0.02)",
-                      backdropFilter: "blur(20px)",
-                      borderColor: isHighlight ? `${highlightColor}30` : `${themeColor}20`,
-                      borderWidth: "1px", borderStyle: "solid",
-                      boxShadow: isHighlight ? `0 4px 20px -4px ${highlightColor}20, 0 0 0 1px ${highlightColor}20 inset` : `0 2px 10px -2px transparent`,
-                    }}
-                  >
+<div className="relative p-4 rounded-2xl transition-all duration-500 overflow-hidden"
+  style={{
+    background: isHighlight ? `linear-gradient(135deg, ${highlightColor}15, ${themeColor}10)` : "rgba(255, 255, 255, 0.02)",
+    backdropFilter: "blur(20px)",
+    borderColor: isHighlight ? highlightColor : `${themeColor}40`,
+    borderWidth: "1.5px", 
+    borderStyle: "solid",
+    boxShadow: isHighlight 
+      ? `0 0 20px ${highlightColor}50, 0 0 40px ${highlightColor}20` 
+      : `0 4px 15px ${themeColor}15`,
+    transition: "all 0.3s ease",
+  }}
+>
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
                       style={{ background: `radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), ${isHighlight ? highlightColor : themeColor}10, transparent 40%)` }} />
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 group-hover:h-3/4 transition-all duration-500 rounded-r-full"
@@ -1754,3 +1935,5 @@ const normalLinks = links.filter(link => !link.link_png_social);
     </div>
   );
 }
+
+
