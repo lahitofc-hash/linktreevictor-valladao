@@ -734,8 +734,7 @@ const DynamicTerrainCanvas = () => {
       cancelAnimationFrame(rafId);
     };
   }, []);
-  return <canvas ref={canvasRef} className="fixed inset-0 w-full h-full pointer-events-none z-0" />;
-};
+return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ width: '100vw', height: '100vh', zIndex: 0 }} />;};
 
 // ============================================================
 // EFEITO DE PARTÍCULAS ORIGINAL
@@ -778,18 +777,20 @@ const ParticlesBackground = () => {
       requestAnimationFrame(animate);
     };
     const rafId = requestAnimationFrame(animate);
-    const handleResize = () => {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-    };
+const handleResize = () => {
+  width = canvas.width = window.innerWidth;
+  height = canvas.height = window.innerHeight;
+  // Força o canvas a ocupar a tela toda
+  canvas.style.width = '100vw';
+  canvas.style.height = '100vh';
+};
     window.addEventListener("resize", handleResize);
     return () => {
       window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(rafId);
     };
   }, []);
-  return <canvas ref={canvasRef} className="fixed inset-0 w-full h-full pointer-events-none z-0" />;
-};
+return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ width: '100vw', height: '100vh', zIndex: 0 }} />;};
 
 // ============================================================
 // EFEITO ARTISTA - VERSÃO ORIGINAL (QUE FUNCIONAVA)
