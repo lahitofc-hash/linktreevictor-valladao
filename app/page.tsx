@@ -823,7 +823,7 @@ const ArtistBackground = ({ themeColor, highlightColor }: { themeColor: string; 
       
       {/* Holofote principal - segue mouse suavemente */}
       <div 
-        className="absolute transition-all duration-700 ease-out"
+        className="absolute transition-all duration-300 ease-out"
         style={{
           left: `${mousePos.x}%`,
           top: `${mousePos.y}%`,
@@ -834,18 +834,6 @@ const ArtistBackground = ({ themeColor, highlightColor }: { themeColor: string; 
         }}
       />
       
-      {/* Brilho central suave */}
-      <div 
-        className="absolute transition-all duration-1000 ease-out"
-        style={{
-          left: `${mousePos.x}%`,
-          top: `${mousePos.y}%`,
-          transform: "translate(-50%, -50%)",
-          width: "200px",
-          height: "200px",
-          background: `radial-gradient(circle, ${highlightColor}10 0%, transparent 70%)`,
-        }}
-      />
 
       {/* Luzes fixas suaves nos cantos */}
       <div className="absolute top-0 left-0 w-[40%] h-[40%]"
@@ -1092,7 +1080,7 @@ const EmailCard = ({ link, index, themeColor, highlightColor, fontFamily, fontSi
         }}
       >
         {/* Spotlight */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-2xl"
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
           style={{ background: `radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), ${themeColor}10, transparent 40%)` }} />
         
         {/* Barra lateral */}
@@ -1146,7 +1134,7 @@ const EmailCard = ({ link, index, themeColor, highlightColor, fontFamily, fontSi
         </div>
 
         {/* Linha inferior */}
-        <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-white/0 to-transparent group-hover:via-white/20 transition-all duration-700" />
+        <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-white/0 to-transparent group-hover:via-white/20 transition-all duration-300" />
       </div>
     </motion.div>
   );
@@ -1399,9 +1387,9 @@ slogan: (primeiraLinha.slogan || "").trim(),         color: primeiraLinha.color 
           cor_nome: primeiraLinha.cor_nome || "#ffffff",
           cor_bio: primeiraLinha.cor_bio || "#ffffff",
           cor_slogan: primeiraLinha.cor_slogan || "#ffffff",
-          titulo_countdown: primeiraLinha.titulo_countdown || "Próximos Lançamentos",
+          titulo_countdown: (primeiraLinha.titulo_countdown || "").trim(),
           cor_titulo_countdown: primeiraLinha.cor_titulo_countdown || "#ffffff",
-          icone_countdown: primeiraLinha.icone_countdown || "Rocket",
+          icone_countdown: (primeiraLinha.icone_countdown || "").trim(),
           cor_icone_countdown: primeiraLinha.cor_icone_countdown || "#22d3ee",
           cor_badge_novo: primeiraLinha.cor_badge_novo || "#06b6d4",
           cor_icone_social: primeiraLinha.cor_icone_social || "#ffffff",
@@ -1628,7 +1616,7 @@ const normalLinks = links.filter(link => !link.link_png_social);
                       boxShadow: isHighlight ? `0 4px 20px -4px ${highlightColor}20, 0 0 0 1px ${highlightColor}20 inset` : `0 2px 10px -2px transparent`,
                     }}
                   >
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-2xl"
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
                       style={{ background: `radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), ${isHighlight ? highlightColor : themeColor}10, transparent 40%)` }} />
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 group-hover:h-3/4 transition-all duration-500 rounded-r-full"
                       style={{ backgroundColor: isHighlight ? highlightColor : themeColor }} />
@@ -1680,7 +1668,7 @@ const normalLinks = links.filter(link => !link.link_png_social);
                       )}
                       {isComingSoon && <Icons.Lock size={16} className="text-white/20" />}
                     </div>
-                    <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-white/0 to-transparent group-hover:via-white/20 transition-all duration-700" />
+                    <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-white/0 to-transparent group-hover:via-white/20 transition-all duration-300" />
                   </div>
                 </motion.div>
               );
